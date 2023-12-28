@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot</title>
+    <style>
+        canvas {
+            border: 1px solid #000;
+        }
+    </style>
+</head>
+<body>
+    <h1>Chatbot</h1>
+    <form method="post">
+        {% csrf_token %}
+        <label for="user_input">User Input:</label>
+        <input type="text" name="user_input" id="user_input" value="{{ user_input }}">
+        <button type="submit">Submit</button>
+    </form>
+
+    {% if response %}
+        <p>Bot Response: {{ response }}</p>
+        <audio controls autoplay id="botAudio" style="display: none">
+            <source src="{{ audio_path }}" type="audio/mp3">
+            Your browser does not support the audio element.
+        </audio>
+        <canvas id="avatarCanvas" width="300" height="300"></canvas>
+    {% endif %}
+    
+    <script>
+        var audioElement;
+    
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log('Document is fully loaded.');
+    
+            var lipSyncAnimationData = [
+                { mouth_open: 0.1 }, { mouth_open: 0.2 }, { mouth_open: 0.3 } /* Add more frames */,
+            ];
+    
+            audioElement = document.getElementById('botAudio');
+    
+            if (audioElement) {
+                console.log('Audio Element:', audioElement);
+                console.log('Setting audio source:', '{{ audio_path }}');
+                audioElement.src = '{{ audio_path }}';
+    
+                audioElement.addEventListener('loadeddata', function () {
+                    console.log('Audio loaded successfully.');
+                    audioElement.play().then(() => {
+                        console.log('Audio playback started successfully.');
+    
+                        // Render lip-sync animation
+                        renderLipSyncAnimation(lipSyncAnimationData, audioElement.duration);
+                    }).catch((error) => {
+                        console.error('Error starting audio playback:', error);
+                    });
+                });
+            } else {
+                console.error('Audio Element not found.');
+            }
+        });
+    
+        function renderLipSyncAnimation(lipSyncAnimation, audioDuration) {
+            var canvas = document.getElementById('avatarCanvas');
+            var ctx = canvas.getContext('2d');
+    
+            var avatarImage = new Image();
+            avatarImage.src = '/static/images/avtar.png';
+    
+            avatarImage.onload = function () {
+                console.log('Avatar Image loaded successfully.');
+                
+                var frameDuration = audioDuration / lipSyncAnimation.length;
+    
+                audioElement.addEventListener('timeupdate', function () {
+                    // Calculate the current frame index based on audio playback time
+                    var frameIndex = Math.floor(audioElement.currentTime / frameDuration);
+    
+                    // Ensure that the frame index is within the bounds of the array
+                    if (frameIndex >= 0 && frameIndex < lipSyncAnimation.length) {
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        ctx.drawImage(avatarImage, 0, 0, canvas.width, canvas.height);
+    
+                        // Draw lips based on mouth openness value
+                        drawLips(ctx, lipSyncAnimation[frameIndex].mouth_open);
+    
+                        console.log('Current Frame Index:', frameIndex);
+                        console.log('Current Frame Data:', lipSyncAnimation[frameIndex]);
+                    }
+                });
+            };
+    
+            avatarImage.onerror = function () {
+                console.error('Error loading Avatar Image.');
+            };
+        }
+    
+        function drawLips(context, mouthOpenness) {
+            // Set lip color and style
+            context.fillStyle = 'red';
+            context.strokeStyle = 'black';
+            context.lineWidth = 2;
+    
+            // Calculate lip positions based on mouth openness value
+            var upperLipY = 150 - 20 * mouthOpenness;
+            var lowerLipY = 150 + 20 * mouthOpenness;
+    
+            // Draw upper lip
+            context.beginPath();
+            context.arc(150, upperLipY, 25, 0, Math.PI, false);
+            context.fill();
+            context.stroke();
+    
+            // Draw lower lip
+            context.beginPath();
+            context.arc(150, lowerLipY, 25, 0, Math.PI, true);
+            context.fill();
+            context.stroke();
+        }
+    </script>
+    
+    
+         
+    
+    
+    
+</body>
+</html>
